@@ -1,0 +1,25 @@
+FROM	alpine:3.12
+
+EXPOSE	80 443 22
+
+RUN 	apk update
+RUN		apk add nginx --no-cache
+RUN		apk add openssh openssl
+RUN		apk add telegraf --repository http://dl-cdn.alpinelinux.org/alpine/edge/community/ --allow-untrusted --no-cache
+RUN		mkdir -p /run/nginx
+RUN		echo "root:password" | chpasswd
+
+RUN		openssl req -x509 -nodes -days 365 -newkey rsa:2048 -subj "/C=RU/ST=Russia/L=Kazan/O=42 School/OU=jmontagu/CN=127.0.0.1" -keyout /etc/ssl/private/nginx.key -out /etc/ssl/certs/nginx.crt
+RUN		openssl dhparam -dsaparam -out /etc/ssl/certs/dhparam.pem 2048
+
+RUN		ssh-keygen -A
+
+COPY	/srcs/sshd_config			/etc/ssh/
+COPY	/srcs/telegraf.conf			/etc/telegraf/
+COPY	/srcs/nginx.conf			/etc/nginx/
+COPY	/srcs/index.html			/var/www/
+COPY	/srcs/start.sh				/
+
+RUN		echo 'Welcome to SSH blah blah blah' > /etc/motd
+
+ENTRYPOINT	sh start.sh
